@@ -1,8 +1,24 @@
 import sqlite3
 import csv
 import os
+import requests  # Añadimos requests para descargar
 
 NOMBRE_DB = 'powerball.db'
+URL_CSV = 'https://data.ny.gov/api/views/d6yy-54nr/rows.csv?accessType=DOWNLOAD'
+RUTA_CSV = 'data/powerball_numbers.csv'
+
+def descargar_csv():
+    """Descarga el CSV desde Data.gov si no existe localmente."""
+    os.makedirs('data', exist_ok=True)
+    if not os.path.exists(RUTA_CSV):
+        print(f"Descargando datos históricos desde {URL_CSV}...")
+        response = requests.get(URL_CSV)
+        response.raise_for_status()
+        with open(RUTA_CSV, 'wb') as f:
+            f.write(response.content)
+        print("Descarga completada.")
+    else:
+        print(f"Usando CSV existente en {RUTA_CSV}")
 
 def crear_tablas():
     """Crea la tabla de sorteos si no existe."""
@@ -23,34 +39,26 @@ def crear_tablas():
     conn.commit()
     conn.close()
 
-def cargar_csv(ruta_csv='data/powerball_numbers.csv'):
-    """Carga los datos desde un archivo CSV a la base de datos."""
-    if not os.path.exists(ruta_csv):
-        print(f"ERROR: No se encontró el archivo {ruta_csv}")
-        print("Por favor, descarga el CSV desde Data.gov y colócalo en la carpeta 'data'.")
-        return
-
+def cargar_csv():
+    """Carga los datos desde el CSV a la base de datos."""
     conn = sqlite3.connect(NOMBRE_DB)
     c = conn.cursor()
 
-    with open(ruta_csv, 'r', encoding='utf-8') as f:
-        # El CSV de Data.gov tiene las columnas: Draw Date,Winning Numbers,Multiplier
-        # "Winning Numbers" viene como "10 22 35 48 61 15" (5 blancas + powerball)
+    with open(RUTA_CSV, 'r', encoding='utf-8') as f:
         lector = csv.reader(f)
-        encabezado = next(lector)  # saltar encabezado
-        
+        encabezado = next(lector)  # Saltar encabezado
+
         for fila in lector:
             try:
                 fecha = fila[0]
                 numeros_str = fila[1]
-                # Separar los números por espacio
                 nums = numeros_str.strip().split()
                 if len(nums) != 6:
                     continue
                 w1, w2, w3, w4, w5, pb = map(int, nums)
-                
+
                 c.execute('''
-                    INSERT OR IGNORE INTO draws 
+                    INSERT OR IGNORE INTO draws
                     (draw_date, white_1, white_2, white_3, white_4, white_5, powerball)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 ''', (fecha, w1, w2, w3, w4, w5, pb))
@@ -61,6 +69,11 @@ def cargar_csv(ruta_csv='data/powerball_numbers.csv'):
     conn.close()
     print("¡Datos cargados exitosamente!")
 
-if __name__ == '__main__':
+def inicializar_base_datos():
+    """Realiza todos los pasos para tener la base de datos lista."""
+    descargar_csv()
     crear_tablas()
     cargar_csv()
+
+if __name__ == '__main__':
+    inicializar_base_datos()
