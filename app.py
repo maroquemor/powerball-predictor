@@ -2,11 +2,12 @@ from flask import Flask, render_template
 import analyzer
 import database
 import sqlite3
+import os
 
 app = Flask(__name__)
 
-# Crear las tablas en la base de datos si no existen
-database.crear_tablas()
+# ¡Importante! Inicializar la base de datos al arrancar
+database.inicializar_base_datos()
 
 @app.route('/')
 def index():
