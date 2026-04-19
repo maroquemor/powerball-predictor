@@ -31,3 +31,18 @@ def index():
 
 if __name__ == '__main__':
     app.run(debug=True)
+from flask import Flask, render_template
+import analyzer
+import database
+import sqlite3
+import os  # <-- Añade esta línea
+
+app = Flask(__name__)
+database.crear_tablas()
+
+# ... (tus rutas y lógica existente) ...
+
+if __name__ == '__main__':
+    # Modifica estas líneas:
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
