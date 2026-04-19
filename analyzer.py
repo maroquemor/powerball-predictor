@@ -1,7 +1,9 @@
 import sqlite3
 from collections import Counter
+import os
 
-NOMBRE_DB = 'powerball.db'
+# Ruta dinámica para la base de datos
+NOMBRE_DB = '/tmp/powerball.db' if os.environ.get('RENDER') else 'powerball.db'
 
 def analizar_frecuencias(limite=100):
     """Cuenta las frecuencias de números blancos y powerball en los últimos 'limite' sorteos."""
