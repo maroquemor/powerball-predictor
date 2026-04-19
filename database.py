@@ -1,15 +1,14 @@
 import sqlite3
 import csv
 import os
-import requests  # Añadimos requests para descargar
+import requests
 
-NOMBRE_DB = 'powerball.db'
+NOMBRE_DB = '/tmp/powerball.db' if os.environ.get('RENDER') else 'powerball.db'
 URL_CSV = 'https://data.ny.gov/api/views/d6yy-54nr/rows.csv?accessType=DOWNLOAD'
-RUTA_CSV = 'data/powerball_numbers.csv'
+RUTA_CSV = '/tmp/powerball_numbers.csv' if os.environ.get('RENDER') else 'data/powerball_numbers.csv'
 
 def descargar_csv():
-    """Descarga el CSV desde Data.gov si no existe localmente."""
-    os.makedirs('data', exist_ok=True)
+    os.makedirs(os.path.dirname(RUTA_CSV), exist_ok=True)
     if not os.path.exists(RUTA_CSV):
         print(f"Descargando datos históricos desde {URL_CSV}...")
         response = requests.get(URL_CSV)
@@ -17,11 +16,8 @@ def descargar_csv():
         with open(RUTA_CSV, 'wb') as f:
             f.write(response.content)
         print("Descarga completada.")
-    else:
-        print(f"Usando CSV existente en {RUTA_CSV}")
 
 def crear_tablas():
-    """Crea la tabla de sorteos si no existe."""
     conn = sqlite3.connect(NOMBRE_DB)
     c = conn.cursor()
     c.execute('''
@@ -40,23 +36,18 @@ def crear_tablas():
     conn.close()
 
 def cargar_csv():
-    """Carga los datos desde el CSV a la base de datos."""
     conn = sqlite3.connect(NOMBRE_DB)
     c = conn.cursor()
-
     with open(RUTA_CSV, 'r', encoding='utf-8') as f:
         lector = csv.reader(f)
-        encabezado = next(lector)  # Saltar encabezado
-
+        next(lector)
         for fila in lector:
             try:
                 fecha = fila[0]
-                numeros_str = fila[1]
-                nums = numeros_str.strip().split()
+                nums = fila[1].strip().split()
                 if len(nums) != 6:
                     continue
                 w1, w2, w3, w4, w5, pb = map(int, nums)
-
                 c.execute('''
                     INSERT OR IGNORE INTO draws
                     (draw_date, white_1, white_2, white_3, white_4, white_5, powerball)
@@ -64,13 +55,11 @@ def cargar_csv():
                 ''', (fecha, w1, w2, w3, w4, w5, pb))
             except Exception as e:
                 print(f"Error en fila {fila}: {e}")
-
     conn.commit()
     conn.close()
     print("¡Datos cargados exitosamente!")
 
 def inicializar_base_datos():
-    """Realiza todos los pasos para tener la base de datos lista."""
     descargar_csv()
     crear_tablas()
     cargar_csv()

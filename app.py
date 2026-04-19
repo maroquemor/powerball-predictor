@@ -6,24 +6,20 @@ import os
 
 app = Flask(__name__)
 
-# Inicializar la base de datos al arrancar
-database.inicializar_base_datos()
-
 @app.route('/')
 def index():
-    # Obtener números sugeridos
+    # Asegurar que la BD esté lista
+    database.inicializar_base_datos()
+    
     blancas, powerball = analyzer.sugerir_numeros()
-
-    # Obtener números calientes y fríos
     stats = analyzer.obtener_calientes_frios()
-
-    # Contar total de sorteos
+    
     conn = sqlite3.connect(database.NOMBRE_DB)
     c = conn.cursor()
     c.execute('SELECT COUNT(*) FROM draws')
     total = c.fetchone()[0]
     conn.close()
-
+    
     return render_template('index.html',
                            blancas=blancas,
                            powerball=powerball,
