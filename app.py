@@ -6,18 +6,18 @@ import os
 
 app = Flask(__name__)
 
-# ¡Importante! Inicializar la base de datos al arrancar
+# Inicializar la base de datos al arrancar
 database.inicializar_base_datos()
 
 @app.route('/')
 def index():
-    # Obtener números sugeridos basados en frecuencia
+    # Obtener números sugeridos
     blancas, powerball = analyzer.sugerir_numeros()
 
     # Obtener números calientes y fríos
     stats = analyzer.obtener_calientes_frios()
 
-    # Contar cuántos sorteos hay en la base de datos
+    # Contar total de sorteos
     conn = sqlite3.connect(database.NOMBRE_DB)
     c = conn.cursor()
     c.execute('SELECT COUNT(*) FROM draws')
@@ -29,19 +29,6 @@ def index():
                            powerball=powerball,
                            stats=stats,
                            total=total)
-
-if __name__ == '__main__':
-    app.run(debug=True)
-from flask import Flask, render_template
-import analyzer
-import database
-import sqlite3
-import os  # <-- Añade esta línea
-
-app = Flask(__name__)
-database.crear_tablas()
-
-# ... (tus rutas y lógica existente) ...
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
